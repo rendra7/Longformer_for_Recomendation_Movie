@@ -36,6 +36,6 @@ else:
         distances, indices = model.kneighbors(embedding, n_neighbors=5)
         st.write("Recommended Movies:")
         for idx in indices[0]:
-            movie_name = df_nlp.iloc[idx]['Movie Name']
+            movie_name = df_nlp.iloc[idx]['Title']
             wiki_page = df_nlp.iloc[idx]['Wiki Page']
             st.write(f"{movie_name} - [Wikipedia Link]({wiki_page})")
