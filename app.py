@@ -21,8 +21,8 @@ model = download_model(model_url)
 if model is None:
     st.error("Model failed to load.")
 else:
-    tokenizer = LongformerTokenizer.from_pretrained("allenai/longformer-base-4096")
-    longformer = LongformerModel.from_pretrained("allenai/longformer-base-4096")
+    tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
+    longformer = AutoModel.from_pretrained("allenai/longformer-base-4096")6")
 
     # Input from user
     user_input = st.text_input("Enter movie description:")
