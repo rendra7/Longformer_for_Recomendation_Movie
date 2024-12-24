@@ -1,30 +1,37 @@
 import streamlit as st
 import joblib
-import requests
-from transformers import LongformerTokenizer, LongformerModel
 from transformers import AutoTokenizer, AutoModel
 import torch
-import io
+import pandas as pd
+import requests
+from io import StringIO
 
-# Function to download model from Hugging Face
-def download_model(model_url):
-    response = requests.get(model_url)
+# Function to download CSV from Hugging Face
+def load_csv_from_huggingface(url):
+    response = requests.get(url)
     if response.status_code == 200:
-        return joblib.load(io.BytesIO(response.content))
+        csv_data = StringIO(response.text)
+        return pd.read_csv(csv_data)
     else:
-        st.error("Failed to download model from Hugging Face.")
+        st.error("Failed to load CSV file from Hugging Face.")
         return None
 
+# URL of the CSV file on Hugging Face
+csv_url = "https://huggingface.co/Rendra7/Longformer_recomendation_model/resolve/main/movie.csv"
+
+# Load movie dataset
+df_nlp = load_csv_from_huggingface(csv_url)
+
 # Load models
-model_url = "https://huggingface.co/Rendra7/Longformer_recomendation_model/resolve/main/recommendation_model.pkl"
-model = download_model(model_url)
+model = joblib.load("recommendation_model.pkl")  # Ensure this file exists locally or modify to load from a URL
+tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
+longformer = AutoModel.from_pretrained("allenai/longformer-base-4096")
 
-if model is None:
-    st.error("Model failed to load.")
-else:
-    tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
-    longformer = AutoModel.from_pretrained("allenai/longformer-base-4096")
+# Streamlit App
+st.title("Movie Recommendation System")
+st.write("Enter a movie description to get recommendations:")
 
+if df_nlp is not None:
     # Input from user
     user_input = st.text_input("Enter movie description:")
     if user_input:
@@ -34,7 +41,12 @@ else:
             embedding = longformer(**tokens).last_hidden_state.mean(dim=1).numpy()
 
         # Get recommendations
-        distances, indices = model.kneighbors(embedding, n_neighbors=5)
-        st.write("Recommended Movies:")
-        for idx in indices[0]:
-            st.write(f"Movie {idx}")  # Replace with actual movie names from your dataset
+        distances, indices = model.kneighbors(embedding, n_neighbors=6)
+
+        # Display recommendations
+        st.write("Recommendations based on your input:")
+        for i in range(1, len(indices.flatten())):  # Exclude the input itself (index 0)
+            recommended_movie = df_nlp['Title'][indices.flatten()[i]]
+            st.write(f"{i}: {recommended_movie}")
+else:
+    st.error("Movie dataset could not be loaded.")
