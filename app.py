@@ -22,7 +22,7 @@ if model is None:
     st.error("Model failed to load.")
 else:
     tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
-    longformer = AutoModel.from_pretrained("allenai/longformer-base-4096")6")
+    longformer = AutoModel.from_pretrained("allenai/longformer-base-4096")
 
     # Input from user
     user_input = st.text_input("Enter movie description:")
