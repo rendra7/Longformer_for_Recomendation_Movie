@@ -2,6 +2,7 @@ import streamlit as st
 import joblib
 import requests
 from transformers import LongformerTokenizer, LongformerModel
+from transformers import AutoTokenizer, AutoModel
 import torch
 import io
 
