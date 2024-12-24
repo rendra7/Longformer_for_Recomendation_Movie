@@ -1,12 +1,13 @@
 import streamlit as st
-import joblib
 from transformers import AutoTokenizer, AutoModel
-import torch
+import joblib
+from huggingface_hub import hf_hub_download
 import pandas as pd
-import requests
+import torch
 from io import StringIO
+import requests
 
-# Function to download CSV from Hugging Face
+# Function to load CSV from Hugging Face
 def load_csv_from_huggingface(url):
     response = requests.get(url)
     if response.status_code == 200:
@@ -16,22 +17,38 @@ def load_csv_from_huggingface(url):
         st.error("Failed to load CSV file from Hugging Face.")
         return None
 
-# URL of the CSV file on Hugging Face
+# Load movie dataset from Hugging Face
 csv_url = "https://huggingface.co/Rendra7/Longformer_recomendation_model/resolve/main/movie.csv"
-
-# Load movie dataset
 df_nlp = load_csv_from_huggingface(csv_url)
 
-# Load models
-model = joblib.load("recommendation_model.pkl")  # Ensure this file exists locally or modify to load from a URL
-tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
-longformer = AutoModel.from_pretrained("allenai/longformer-base-4096")
+# Load models from Hugging Face Hub
+@st.cache_resource  # Cache resource to avoid re-downloading
+def load_model():
+    try:
+        # Download model file from Hugging Face
+        model_path = hf_hub_download(repo_id="Rendra7/Longformer_recomendation_model", filename="recommendation_model.pkl")
+        model = joblib.load(model_path)
+        return model
+    except Exception as e:
+        st.error(f"Failed to load model: {e}")
+        return None
 
-# Streamlit App
+# Load tokenizer and Longformer model
+@st.cache_resource  # Cache model to save memory and improve performance
+def load_longformer():
+    tokenizer = AutoTokenizer.from_pretrained("allenai/longformer-base-4096")
+    model = AutoModel.from_pretrained("allenai/longformer-base-4096")
+    return tokenizer, model
+
+# Streamlit app
 st.title("Movie Recommendation System")
 st.write("Enter a movie description to get recommendations:")
 
-if df_nlp is not None:
+# Load model and tokenizer
+model = load_model()
+tokenizer, longformer = load_longformer()
+
+if model and df_nlp is not None:
     # Input from user
     user_input = st.text_input("Enter movie description:")
     if user_input:
@@ -49,4 +66,4 @@ if df_nlp is not None:
             recommended_movie = df_nlp['Title'][indices.flatten()[i]]
             st.write(f"{i}: {recommended_movie}")
 else:
-    st.error("Movie dataset could not be loaded.")
+    st.error("Model or movie dataset could not be loaded.")
